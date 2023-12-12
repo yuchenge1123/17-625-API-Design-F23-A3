@@ -1,0 +1,133 @@
+syntax = "proto3";
+
+package reddit;
+
+import "google/protobuf/timestamp.proto";
+
+
+// Service API
+service RedditService {
+    //create a post
+    //store post in list
+    //return general response and post_id
+    rpc CreatePost(Post) returns (ApiResponse);
+
+    //increase or decrease score in post
+    //return general response and post_id
+    rpc UpvoteDownvotePost(UpvoteDownvoteRequest) returns (ApiResponse);
+
+    //get post by post_id
+    rpc RetrievePostContent(PostRequest) returns (Post);
+
+    //create a comment
+    //store comment in list
+    //return general response and comment_id
+    rpc CreateComment(Comment) returns (ApiResponse);
+
+    //increase or decrease score in comment
+    //return general response and comment_id
+    rpc UpvoteDownvoteComment(UpvoteDownvoteRequest) returns (ApiResponse);
+
+    //Retrieving a list of N most upvoted comments under a post
+    rpc RetrieveComments(CommentsRequest) returns (CommentsResponse);
+
+    //open most N most upvoted comments under a given
+    //comment, alongside with N most upvoted comments under those comments
+    rpc ExpandCommentBranch(ExpandRequest) returns (CommentsResponse);
+}
+
+
+// Enums
+enum PostState {
+    POST_NORMAL = 0;
+    POST_LOCKED = 1;
+    POST_HIDDEN = 2;
+}
+
+enum CommentState {
+    COMMENT_NORMAL = 0;
+    COMMENT_HIDDEN = 1;
+}
+
+enum SubredditVisibility {
+    PUBLIC = 0;
+    PRIVATE = 1;
+    HIDDEN = 2;
+}
+
+
+message ApiResponse {
+    bool success = 1;
+    string message = 2; // To provide error messages or operation success confirmation
+    string modified_id = 3; // ID of the modified or created post/comment
+    int32 post_count = 4;
+    int32 post_score = 5;
+    int32 comment_score = 6;
+}
+
+
+// Entities
+message User {
+    string id = 1;
+    string username = 2; // Assuming username is a part of the user details
+    // other user details
+}
+
+message Post {
+    string id = 1;
+    string title = 2;
+    string text = 3;
+    oneof media_url {
+        string video_url = 4;
+        string image_url = 5;
+    }
+    User author = 6;  // This field can be null if the author is not provided
+    int32 score = 7;  // Can be negative
+    PostState state = 8;  // Enum for normal, locked, hidden
+    google.protobuf.Timestamp publication_date = 9;
+    string subreddit_id = 10; // Assuming each post belongs to one subreddit
+}
+
+message Comment {
+    string id = 1;
+    User author = 2;
+    string text = 3;
+    int32 score = 4;
+    CommentState state = 5;
+    google.protobuf.Timestamp publication_date = 6;
+    string parent_id = 7; // Post or Comment ID
+}
+
+message Subreddit {
+    string id = 1;
+    string name = 2;
+    SubredditVisibility visibility = 3;
+    repeated string tags = 4;
+}
+
+
+// Request and Response messages
+message UpvoteDownvoteRequest {
+    string id = 1; // Post or Comment ID
+    bool is_upvote = 2; // true for upvote, false for downvote
+}
+
+message PostRequest {
+    string id = 1; // Post ID
+}
+
+message CommentsRequest {
+    string post_id = 1; // ID of the post for which comments are requested
+    int32 limit = 2; // Number of comments to retrieve
+}
+
+message ExpandRequest {
+    string comment_id = 1; // ID of the root comment
+    int32 comment_num = 3;
+}
+
+
+message CommentsResponse {
+    repeated Comment comments = 1; // List of comments
+    bool has_comment = 2; // Flag indicating if there are more comments under this comment
+}
